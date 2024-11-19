@@ -57,10 +57,11 @@ def shp2pgsql_batch(dir_name, username, password, host, port, dbname):
 
 # 执行任务计划
 if __name__ == '__main__':
-    file_path = r'/Users/yangsai/Downloads/ThirdYear'
-    username = 'postgres'
-    password = '123'
-    host = '127.0.0.1'
-    port = '5432'
-    dbname = 'test'
+    # 推荐使用绝对路径，以免在不同操作系统下出现问题
+    file_path = r'path/to/your/directory'
+    username = 'yourname'
+    password = 'yourpassword'
+    host = 'yourhost'
+    port = 'yourport'
+    dbname = 'yourdatabase'
     shp2pgsql_batch(file_path, username, password, host, port, dbname)
