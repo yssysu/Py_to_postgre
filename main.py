@@ -5,6 +5,18 @@ import os
 from pathlib import Path
 from collections import Counter
 
+def get_info():
+    print("请输入用户名(User):")
+    User = input()
+    print("请输入密码(Passwords):")
+    Passwords = input()
+    print("请输入数据库名称(Database):")
+    Database = input()
+    print("请输入端口(默认5432):")
+    n = input()
+    print("请输入服务器(默认为127.0.0.1):")
+    m = input()
+    return User,Passwords,Database,n,m
 
 def shp2pgsql(file, engine, success_files, failed_files):
     """单个shp文件入库"""
@@ -95,10 +107,24 @@ def shp2pgsql_batch(dir_name, username, password, host, port, dbname):
 
 # 执行任务计划
 if __name__ == '__main__':
-    file_path = r'/Users/yangsai/Downloads'
-    username = 'postgres'
-    password = '123'
-    host = '127.0.0.1'
-    port = '5432'
-    dbname = 'shapfile'
+    '''
+    输入文件所在的位置，因为是自动搜索该目录下的所有子文件，所以不需要具体到某一个文件夹。
+    详情见"README.md"文件
+    '''
+    file_path = r'/Users/yangsai/Downloads/QGIS'
+    username,password,dbname,port,host = get_info()
+    print()
+    
+    '''
+    如果在输入的过程中出现问题，
+    可以将
+    'username,password,dbname,port,host = get_info()'注释掉
+    然后采用下面的代码输入相关信息，运行脚本
+    # username = 'postgres'
+    # password = '***'
+    # host = '127.0.0.1'
+    # port = '5432'
+    # dbname = 'shapfile'
+    '''
+    
     shp2pgsql_batch(file_path, username, password, host, port, dbname)
