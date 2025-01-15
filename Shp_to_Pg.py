@@ -4,6 +4,7 @@ from geoalchemy2 import Geometry, WKTElement
 import os
 from pathlib import Path
 from collections import Counter
+import traceback
 
 def get_info():
     print("请输入用户名(User):")
@@ -22,13 +23,21 @@ def shp2pgsql(file, engine, success_files, failed_files):
     """单个shp文件入库"""
     file_name = os.path.split(file)[1]
     try:
-        print('正在写入: ' + file_name)
+        print(f"正在写入: {file_name}")
         tbl_name = file_name.split('.')[0]  # 表名
-        map_data = gpd.GeoDataFrame.from_file(file)
+        map_data = gpd.read_file(file, encoding='utf-8')
+        if map_data.empty:
+            print(f"警告: 文件 {file_name} 数据为空，跳过此文件。")
+            return
         spatial_ref = map_data.crs.to_epsg() or 4326  # 确保获取有效 SRID
         print(f"空间参考系 (SRID): {spatial_ref}")
-        map_data['geometry'] = map_data['geometry'].apply(
-            lambda x: WKTElement(x.wkt, spatial_ref))
+
+        # 检查是否有空的几何数据
+        if map_data['geometry'].isnull().any():
+            print(f"警告: 文件 {file_name} 包含空的几何数据，跳过此文件。")
+            return
+        
+        map_data['geometry'] = map_data['geometry'].apply(lambda x: WKTElement(x.wkt, spatial_ref))
         map_data.to_sql(
             name=tbl_name,
             con=engine,
@@ -42,8 +51,8 @@ def shp2pgsql(file, engine, success_files, failed_files):
     except Exception as e:
         error_message = str(e)
         print(f"写入文件 {file_name} 失败: {error_message}")
+        traceback.print_exc()  # 打印详细错误堆栈
         failed_files.append((file_name, error_message))  # 记录失败文件及原因
-
 
 def shp2pgsql_batch(dir_name, username, password, host, port, dbname):
     """批量任务"""
@@ -71,11 +80,15 @@ def shp2pgsql_batch(dir_name, username, password, host, port, dbname):
             print(f"- {dup_file}")
 
     # 创建数据库连接
-    connection_string = f"postgresql+psycopg2://{username}:{password}@{host}:{port}/{dbname}"
+    connection_string = f"postgresql+psycopg2://{username}:{password}@{host}:{port}/{dbname}?client_encoding=UTF8"
     engine = create_engine(connection_string)
 
-    with engine.connect():
-        print("\n数据库连接成功！")
+    try:
+        with engine.connect():
+            print("\n数据库连接成功！")
+    except Exception as e:
+        print(f"数据库连接失败: {e}")
+        return
 
     # 记录成功和失败的文件
     success_files = []
@@ -100,31 +113,11 @@ def shp2pgsql_batch(dir_name, username, password, host, port, dbname):
         print("\n未成功写入的文件列表及原因：")
         for failed_file, reason in failed_files:
             print(f"- {failed_file}: {reason}")
-            print()
     else:
         print("\n所有文件已成功写入数据库！")
 
-
 # 执行任务计划
 if __name__ == '__main__':
-    '''
-    输入文件所在的位置，因为是自动搜索该目录下的所有子文件，所以不需要具体到某一个文件夹。
-    详情见"README.md"文件
-    '''
-    file_path = r'/Users/yangsai/Downloads/QGIS'
-    username,password,dbname,port,host = get_info()
-    print()
-    
-    '''
-    如果在输入的过程中出现问题，
-    可以将
-    'username,password,dbname,port,host = get_info()'注释掉
-    然后采用下面的代码输入相关信息，运行脚本
-    # username = 'postgres'
-    # password = '***'
-    # host = '127.0.0.1'
-    # port = '5432'
-    # dbname = 'shapfile'
-    '''
-    
+    file_path = r'/Users/yangsai/Downloads/QGIS/数据/2020年广东省地铁路线'
+    username, password, dbname, port, host = get_info()
     shp2pgsql_batch(file_path, username, password, host, port, dbname)
