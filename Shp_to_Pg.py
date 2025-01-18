@@ -118,6 +118,6 @@ def shp2pgsql_batch(dir_name, username, password, host, port, dbname):
 
 # 执行任务计划
 if __name__ == '__main__':
-    file_path = r'/Users/yangsai/Downloads/QGIS/数据/2020年广东省地铁路线'
+    file_path = r'/Users/yangsai/Downloads/QGIS/数据'
     username, password, dbname, port, host = get_info()
     shp2pgsql_batch(file_path, username, password, host, port, dbname)
